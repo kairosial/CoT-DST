@@ -1,0 +1,78 @@
+[
+    {
+        "ID": "SNG0073.json",
+        "turn_id": 0,
+        "domains": [
+            "taxi"
+        ],
+        "dialog": {
+            "sys": [
+                ""
+            ],
+            "usr": [
+                "i would like a taxi from saint john s college to pizza hut fen ditton ."
+            ]
+        },
+        "slot_values": {
+            "taxi-destination": "pizza hut fenditton",
+            "taxi-departure": "saint johns college"
+        },
+        "turn_slot_values": {
+            "taxi-destination": "pizza hut fenditton",
+            "taxi-departure": "saint johns college"
+        },
+        "last_slot_values": {},
+        "prompt": "\nCREATE TABLE hotel(\n  name text,\n  pricerange text CHECK (pricerange IN (dontcare, cheap, moderate, expensive)),\n  type text CHECK (type IN (hotel, guest house)),\n  parking text CHECK (parking IN (dontcare, yes, no)),\n  book_number_of_days int,\n  book_day text,\n  book_people int,\n  area text CHECK (area IN (dontcare, centre, east, north, south, west)),\n  stars int CHECK (stars IN (dontcare, 0, 1, 2, 3, 4, 5)),\n  internet text CHECK (internet IN (dontcare, yes, no))\n)\n/*\n4 example rows:\nSELECT * FROM hotel LIMIT 4;\nname  pricerange  type  parking book_number_of_days book_day  book_people area  stars internet\na and b guest house moderate  guest house  dontcare  3 friday  5 east  4 yes\nashley hotel  expensive hotel yes 2 thursday  5 north 5 yes\nel shaddia guest house  cheap guest house  yes 5 friday  2 centre  dontcare  no\nexpress by holiday inn cambridge  dontcare  guest house yes 3 monday  2 east  dontcare  no\n*/\n\nCREATE TABLE train(\n  destination text,\n  departure text,\n  day text,\n  book_people int,\n  depart_time text,\n  arrive_by_time text\n)\n/*\n3 example rows:\nSELECT * FROM train LIMIT 3;\ndestination departure day book_people depart_time arrive_by_time\nlondon kings cross  cambridge monday  6 dontcare 05:51\ncambridge stansted airport  dontcare  1 20:24 20:52\npeterborough  cambridge saturday  2  12:06  12:56\n*/\n\nCREATE TABLE attraction(\n  name text,\n  area text CHECK (area IN (dontcare, centre, east, north, south, west)),\n  type text CHECK (type IN (architecture, boat, church, cinema, college, concert hall, entertainment, hotspot, multiple sports, museum, nightclub, park, special, swimming pool, theatre))\n)\n/*\n4 example rows:\nSELECT * FROM attraction LIMIT 4;\nname area type\nabbey pool and astroturf pitch  centre  swimming pool\nadc theatre centre  theatre\nall saints church dontcare  architecture\ncastle galleries  centre  museum\n*/\n\nCREATE TABLE restaurant(\n  name text,\n  food_type text,\n  pricerange text CHECK (pricerange IN (dontcare, cheap, moderate, expensive)),\n  area text CHECK (area IN (centre, east, north, south, west)),\n  book_time text,\n  book_day text,\n  book_people int\n)\n/*\n5 example rows:\nSELECT * FROM restaurant LIMIT 5;\nname  food_type  pricerange  area  book_time book_day  book_people\npizza hut city centre italian dontcare centre  13:30 wednesday 7\nthe missing sock  international moderate  east  dontcare dontcare  2\ngolden wok chinese moderate north 17:11 friday 4\ncambridge chop house  dontcare  expensive  center 08:43 monday  5\ndarrys cookhouse and wine shop  modern european expensive center  11:20 saturday  8\n*/\n\nCREATE TABLE taxi(\n  destination text,\n  departure text,\n  depart_time text,\n  arrive_by_time text\n)\n/*\n3 example rows:\nSELECT * FROM taxi LIMIT 3;\ndestination departure depart_time arrive_by_time\ncopper kettle royal spice 14:45 15:30\nmagdalene college  university arms hotel dontcare  15:45\nlovell lodge  da vinci pizzeria 11:45 dontcare\n*/\n\n-- Using valid SQLite, answer the following multi-turn conversational questions for the tables provided above.\n\n\nExample #1\n[context] hotel-type: guest house, attraction-type: park, hotel-parking: yes, hotel-internet: yes\n[system] sure ! milton country park is at cb46az . it s free admission .\nQ: [user] free is perfect . that will leave me extra to book a taxi from my hotel .\nSQL: SELECT * FROM taxi WHERE departure = acorn guest house;\n\n\nExample #2\n[context] taxi-destination: pembroke college\n[system] where will you be departing from ?\nQ: [user] i need to leave from primavera\nSQL: SELECT * FROM taxi WHERE departure = primavera;\n\n\nExample #3\n[context] \n[system] \nQ: [user] i want to get a taxi to pick me up from the cambridge train station please .\nSQL: SELECT * FROM taxi WHERE departure = cambridge train station;\n\n\nExample #4\n[context] attraction-type: museum, restaurant-book time: 13:45, restaurant-pricerange: moderate, attraction-area: west, restaurant-area: west, restaurant-name: prezzo, restaurant-food_type: italian, restaurant-book people: 2, restaurant-book day: tuesday\n[system] okay . your booking was successful . the reference number is 8z0bbwce . your table will be reserved for 15 minutes .\nQ: [user] i need to book a taxi from the museum to the restaurant .\nSQL: SELECT * FROM taxi WHERE destination = prezzo AND departure = cafe jello gallery AND arrive_by_time = 13:45;\n\n\nExample #5\n[context] restaurant-book day: wednesday, attraction-name: cafe jello gallery, restaurant-name: tandoori palace, restaurant-book time: 12:30, restaurant-food_type: indian, attraction-area: west, restaurant-book people: 6, restaurant-area: west, restaurant-pricerange: expensive\n[system] your reference number is src2i813 , your table will be held for 15 mins . is there anything else i can assist you with ?\nQ: [user] yes . i need a taxi to take me from the museum to the restaurant .\nSQL: SELECT * FROM taxi WHERE destination = tandoori palace AND departure = cafe jello gallery;\n\n\nExample #6\n[context] attraction-type: swimming pool, restaurant-book time: 12:00, attraction-name: abbey pool and astroturf pitch, attraction-area: east, restaurant-name: j restaurant, restaurant-book people: 3, restaurant-book day: sunday\n[system] sure ! the postcode is cb68nt and the entrance fee is not known .\nQ: [user] i would also like to book a taxi from the pool to the restaurant\nSQL: SELECT * FROM taxi WHERE destination = j restaurant AND departure = abbey pool and astroturf pitch;\n\n\nExample #7\n[context] \n[system] \nQ: [user] i need a taxi departing from tang chinese .\nSQL: SELECT * FROM taxi WHERE departure = tang chinese;\n\n\nExample #8\n[context] \n[system] \nQ: [user] hello . can you book a taxi for me ? i need to travel from the grafton hotel restaurant to home from home .\nSQL: SELECT * FROM taxi WHERE destination = home from home AND departure = grafton hotel restaurant;\n\n\nExample #9\n[context] \n[system] \nQ: [user] i want to book a taxi . the taxi should go to da vinci pizzeria and should depart from the missing sock .\nSQL: SELECT * FROM taxi WHERE destination = da vinci pizzeria AND departure = the missing sock;\n\n\nExample #10\n[context] \n[system] \nQ: [user] hi , i would like to book a taxi from hakka to sidney sussex college .\nSQL: SELECT * FROM taxi WHERE destination = sidney sussex college AND departure = hakka;\n\n\nExample #11\n[context] \n[system] \nQ: [user] i would like a taxi from saint john s college to pizza hut fen ditton .\nSQL: SELECT * FROM",
+        "pred": {
+            "taxi-destination": "pizza hut fenditton",
+            "taxi-departure": "saint johns college"
+        },
+        "ontology_path": "./data/mwz2.1/ontology.json",
+        "completion": "taxi WHERE destination = pizza hut fen ditton AND departure = saint john s college",
+        "Joint Goal Accuracy": 1.0,
+        "Slot Accuracy": 1.0,
+        "Joint F1": 1.0,
+        "pred_status": "Correct"
+    },
+    {
+        "ID": "SNG0073.json",
+        "turn_id": 1,
+        "domains": [
+            "taxi"
+        ],
+        "dialog": {
+            "sys": [
+                "",
+                "what time do you want to leave and what time do you want to arrive by ?"
+            ],
+            "usr": [
+                "i would like a taxi from saint john s college to pizza hut fen ditton .",
+                "i want to leave after 17:15 ."
+            ]
+        },
+        "slot_values": {
+            "taxi-leaveat": "17:15",
+            "taxi-destination": "pizza hut fenditton",
+            "taxi-departure": "saint johns college"
+        },
+        "turn_slot_values": {
+            "taxi-leaveat": "17:15"
+        },
+        "last_slot_values": {
+            "taxi-destination": "pizza hut fenditton",
+            "taxi-departure": "saint johns college"
+        },
+        "prompt": "\nCREATE TABLE hotel(\n  name text,\n  pricerange text CHECK (pricerange IN (dontcare, cheap, moderate, expensive)),\n  type text CHECK (type IN (hotel, guest house)),\n  parking text CHECK (parking IN (dontcare, yes, no)),\n  book_number_of_days int,\n  book_day text,\n  book_people int,\n  area text CHECK (area IN (dontcare, centre, east, north, south, west)),\n  stars int CHECK (stars IN (dontcare, 0, 1, 2, 3, 4, 5)),\n  internet text CHECK (internet IN (dontcare, yes, no))\n)\n/*\n4 example rows:\nSELECT * FROM hotel LIMIT 4;\nname  pricerange  type  parking book_number_of_days book_day  book_people area  stars internet\na and b guest house moderate  guest house  dontcare  3 friday  5 east  4 yes\nashley hotel  expensive hotel yes 2 thursday  5 north 5 yes\nel shaddia guest house  cheap guest house  yes 5 friday  2 centre  dontcare  no\nexpress by holiday inn cambridge  dontcare  guest house yes 3 monday  2 east  dontcare  no\n*/\n\nCREATE TABLE train(\n  destination text,\n  departure text,\n  day text,\n  book_people int,\n  depart_time text,\n  arrive_by_time text\n)\n/*\n3 example rows:\nSELECT * FROM train LIMIT 3;\ndestination departure day book_people depart_time arrive_by_time\nlondon kings cross  cambridge monday  6 dontcare 05:51\ncambridge stansted airport  dontcare  1 20:24 20:52\npeterborough  cambridge saturday  2  12:06  12:56\n*/\n\nCREATE TABLE attraction(\n  name text,\n  area text CHECK (area IN (dontcare, centre, east, north, south, west)),\n  type text CHECK (type IN (architecture, boat, church, cinema, college, concert hall, entertainment, hotspot, multiple sports, museum, nightclub, park, special, swimming pool, theatre))\n)\n/*\n4 example rows:\nSELECT * FROM attraction LIMIT 4;\nname area type\nabbey pool and astroturf pitch  centre  swimming pool\nadc theatre centre  theatre\nall saints church dontcare  architecture\ncastle galleries  centre  museum\n*/\n\nCREATE TABLE restaurant(\n  name text,\n  food_type text,\n  pricerange text CHECK (pricerange IN (dontcare, cheap, moderate, expensive)),\n  area text CHECK (area IN (centre, east, north, south, west)),\n  book_time text,\n  book_day text,\n  book_people int\n)\n/*\n5 example rows:\nSELECT * FROM restaurant LIMIT 5;\nname  food_type  pricerange  area  book_time book_day  book_people\npizza hut city centre italian dontcare centre  13:30 wednesday 7\nthe missing sock  international moderate  east  dontcare dontcare  2\ngolden wok chinese moderate north 17:11 friday 4\ncambridge chop house  dontcare  expensive  center 08:43 monday  5\ndarrys cookhouse and wine shop  modern european expensive center  11:20 saturday  8\n*/\n\nCREATE TABLE taxi(\n  destination text,\n  departure text,\n  depart_time text,\n  arrive_by_time text\n)\n/*\n3 example rows:\nSELECT * FROM taxi LIMIT 3;\ndestination departure depart_time arrive_by_time\ncopper kettle royal spice 14:45 15:30\nmagdalene college  university arms hotel dontcare  15:45\nlovell lodge  da vinci pizzeria 11:45 dontcare\n*/\n\n-- Using valid SQLite, answer the following multi-turn conversational questions for the tables provided above.\n\n\nExample #1\n[context] hotel-type: guest house, attraction-type: park, taxi-departure: acorn guest house, hotel-parking: yes, hotel-internet: yes\n[system] i can book your taxi for you if you would like , would you care to go ahead and book 1 ?\nQ: [user] i need the taxi to commute and i have to leave the hotel by 14:00 , can i get their contact number and car type please .\nSQL: SELECT * FROM taxi WHERE depart_time = 14:00;\n\n\nExample #2\n[context] \n[system] \nQ: [user] i need to book a taxi to take me to williams art and antiques . i need to leave after 24:30 .\nSQL: SELECT * FROM taxi WHERE depart_time = 24:30 AND destination = williams art and antiques;\n\n\nExample #3\n[context] hotel-type: guest house, attraction-type: museum, taxi-departure: byard art, taxi-destination: bridge guest house, hotel-book stay: 2, attraction-area: south, hotel-pricerange: moderate, hotel-area: south, attraction-name: byard art, hotel-internet: yes, hotel-book day: tuesday, hotel-book people: 1\n[system] sure ! what time would you like to leave the museum ?\nQ: [user] i want to leave the museum by 7:30 .\nSQL: SELECT * FROM taxi WHERE depart_time = 07:30;\n\n\nExample #4\n[context] \n[system] \nQ: [user] i want a taxi to pick me up after 21:00 to take me to little saint mary s church .\nSQL: SELECT * FROM taxi WHERE depart_time = 21:00 AND destination = little saint marys church;\n\n\nExample #5\n[context] restaurant-food_type: french, hotel-name: cambridge belfry, taxi-departure: restaurant 2 two, restaurant-pricerange: expensive, taxi-destination: cambridge belfry\n[system] sure , what time would you like the car for ?\nQ: [user] i would like to leave the restaurant at 21:00 .\nSQL: SELECT * FROM taxi WHERE depart_time = 21:00;\n\n\nExample #6\n[context] taxi-destination: downing college, taxi-departure: tang chinese\n[system] great . now i will just need a time .\nQ: [user] i need to arrive by 19:30\nSQL: SELECT * FROM taxi WHERE depart_time = 19:30;\n\n\nExample #7\n[context] taxi-departure: grafton hotel restaurant, taxi-destination: home from home\n[system] no problem at all . what time do you want to leave and arrive by , respectively ?\nQ: [user] leave after 22:30 and dont care when i arrive\nSQL: SELECT * FROM taxi WHERE depart_time = 22:45;\n\n\nExample #8\n[context] taxi-destination: pembroke college, taxi-departure: primavera\n[system] great , do you have a leave by , or an arrival time in mind ?\nQ: [user] i want to leave by 9:15 . i also need to know the car type and contact number .\nSQL: SELECT * FROM taxi WHERE depart_time = 09:15;\n\n\nExample #9\n[context] taxi-destination: fitzbillies restaurant, taxi-departure: kings lynn train station\n[system] ok , and what time will you need to arrive and leave ?\nQ: [user] i need to leave after 20:00 please .\nSQL: SELECT * FROM taxi WHERE depart_time = 20:00;\n\n\nExample #10\n[context] taxi-departure: cambridge train station\n[system] what time would you like to depart at ?\nQ: [user] i would like to leave after 09:15 .\nSQL: SELECT * FROM taxi WHERE depart_time = 09:15;\n\n\nExample #11\n[context] taxi-departure: saint johns college, taxi-destination: pizza hut fenditton\n[system] what time do you want to leave and what time do you want to arrive by ?\nQ: [user] i want to leave after 17:15 .\nSQL: SELECT * FROM",
+        "pred": {
+            "taxi-destination": "pizza hut fenditton",
+            "taxi-departure": "saint johns college",
+            "taxi-leaveat": "17:15"
+        },
+        "ontology_path": "./data/mwz2.1/ontology.json",
+        "completion": "taxi WHERE leaveat = 17:15 AND destination = pizza hut fenditton",
+        "Joint Goal Accuracy": 1.0,
+        "Slot Accuracy": 1.0,
+        "Joint F1": 1.0,
+        "pred_status": "Correct"
+    }
+]
