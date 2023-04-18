@@ -32,6 +32,10 @@ def typo_fix(slot_values, ontology, version="2.1"):
         value = value.replace(' s ', 's ')
         if value.endswith(' s'):
             value = value[:-2] + 's'
+        
+        # value에 ' 있으면 제거
+        if "'" in value:
+            value = value.replace("'","")
 
         # fix typo words
         general_typos = {'fen ditton': 'fenditton',
@@ -84,4 +88,5 @@ def typo_fix(slot_values, ontology, version="2.1"):
 
         if value:
             fixed[slot] = value
+        print(fixed)
     return fixed

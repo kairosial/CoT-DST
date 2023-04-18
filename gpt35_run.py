@@ -1,36 +1,59 @@
 import os
-import time
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import json
 import argparse
 import copy
+import time
 from collections import defaultdict
 from tqdm import tqdm
 from utils.helper import SpeedLimitTimer, PreviousStateRecorder
 from utils.typo_fix import typo_fix
 from config import CONFIG
 
+# from codex_completion import codex_completion
 from gpt35_completion import gpt35_completion
-from utils.gpt35_sql import sql_pred_parse, sv_dict_to_string
-from gpt35_prompting import get_prompt, conversion, table_prompt
+from utils.custom_parse import custom_pred_parse, sv_dict_to_string
+from gpt35_prompting_base import get_custom_prompt, conversion, custom_prompt
 from retriever.code.embed_based_retriever import EmbeddingRetriever
 from evaluate_metrics import evaluate
+from evaluate_FGA import printFGA
+
+'''
+default command
+python run_GPT35_test.py \
+      --train_fn data/mw21_5p_train_v2.json \
+      --retriever_dir retriever/expts/mw21_5p_v2 \
+      --output_dir expts/gpt35_5p_v2_ours  \
+      --mwz_ver 2.4
+'''
 
 # input arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--train_fn', type=str, help="training data file (few-shot or full shot)", required=True)  # e.g. "./data/mw21_10p_train_v3.json"
 parser.add_argument('--retriever_dir', type=str, required=True, help="sentence transformer saved path")  # "./retriever/expts/mw21_10p_v3_0304_400_20"
-parser.add_argument('--output_cond', type=str, default="./expts/debug/", help="directory to save running log and configs")
+parser.add_argument('--output_cond', type=str, default="./expts/debug", help="directory to save running log and configs")
 parser.add_argument('--mwz_ver', type=str, default="2.1", choices=['2.1', '2.4'], help="version of MultiWOZ")  
 parser.add_argument('--test_fn', type=str, default='', help="file to evaluate on, empty means use the test set")
+parser.add_argument('--test_size', type=int, default='10', help="")
 args = parser.parse_args()
 
 # current time
 cur_time = time.strftime('%y%m%d_%H%M-')
 
 # create the output folder
-output_dir = 'expts/' + cur_time + args.output_cond
+output_dir = 'expts/' + cur_time + args.output_cond + '_inst' + str(args.test_size)
 os.makedirs(output_dir, exist_ok=True)
 
+'''
+"exp_config.json"
+{
+    "train_fn": "data/mw21_5p_train_v2.json",
+    "retriever_dir": "retriever/expts/mw21_5p_v2_0304_200_10/",
+    "output_dir": "expts/codex_5p_v2",
+    "mwz_ver": "2.1",
+    "test_fn": ""
+}
+'''
 with open(os.path.join(output_dir, "exp_config.json"), 'w') as f:
     json.dump(vars(args), f, indent=4)
 
@@ -60,7 +83,7 @@ with open(test_set_path) as f:
     test_set = json.load(f)
 
 # load the retriever
-retriever = EmbeddingRetriever(datasets=[train_set], 
+retriever = EmbeddingRetriever(datasets=[train_set],
                                model_path=args.retriever_dir,
                                search_index_filename=os.path.join(args.retriever_dir, "train_index.npy"), 
                                sampling_method="pre_assigned")
@@ -97,25 +120,33 @@ def run(test_set, turn=-1, use_gold=False):
         n_total += 1
 
         completion = ""
-        if use_gold:
-            prompt_text = get_prompt(
+        if use_gold: # 이전 dialogue context 가 gold context 일 때 (분석 용도)
+            prompt_text = get_custom_prompt(
                 data_item, examples=retriever.item_to_nearest_examples(data_item, k=NUM_EXAMPLE))
         else:
+            # 각 data_items에 대한 이전 턴의 state를 받아옴
             predicted_context = prediction_recorder.state_retrieval(data_item)
             modified_item = copy.deepcopy(data_item)
             modified_item['last_slot_values'] = predicted_context
+            # 이전 턴의 state을 참조해 예시 검색
             examples = retriever.item_to_nearest_examples(
                 modified_item, k=NUM_EXAMPLE)
-            prompt_text = get_prompt(
+            # prompt_생성
+            # prompt_text = get_prompt(
+            #     data_item, examples=examples, given_context=predicted_context)
+            # prompt 바꾼 버전
+            prompt_text = get_custom_prompt(
                 data_item, examples=examples, given_context=predicted_context)
         
         # print the retrieved examples (without the sql table)
-        print(prompt_text.replace(conversion(table_prompt), ""))
+        # print(prompt_text.replace(conversion(table_prompt), ""))
+
+        print(prompt_text.replace(conversion(custom_prompt), ""))
 
         # record the prompt
         data_item['prompt'] = prompt_text
 
-        # GPT-3.5 completion
+        # gpt35 completion
         complete_flag = False
         parse_error_count = 0
         while not complete_flag:
@@ -124,18 +155,19 @@ def run(test_set, turn=-1, use_gold=False):
                 # convert back the sql completion result
                 completion = conversion(completion, reverse=True)
             except Exception as e:
+                # example 개수 줄이기
                 if e.user_message.startswith("This model's maximum context length"):
                     print("prompt overlength")
                     examples = examples[1:]
-                    prompt_text = get_prompt(
+                    prompt_text = get_custom_prompt(
                         data_item, examples=examples, given_context=predicted_context)
                 else:
                     # throughput too high
                     timer.sleep(10)
             else:
                 try:
-                    # check if GPT-3.5 is crazy
-                    temp_parse = sql_pred_parse(completion)
+                    # check if CODEX is crazy 
+                    temp_parse = custom_pred_parse(completion)
                 except:
                     parse_error_count += 1
                     if parse_error_count >= 3:
@@ -148,10 +180,11 @@ def run(test_set, turn=-1, use_gold=False):
         # aggregate the prediction and the history states
         predicted_slot_values = {}
         try:
-            predicted_slot_values = sql_pred_parse(completion)  # a dictionary
+            predicted_slot_values = custom_pred_parse(completion) # a dictionary
         except:
-            print("the output is not a valid SQL query")
+            print("the output is not a valid result")
             data_item['not_valid'] = 1
+
         predicted_slot_values = typo_fix(predicted_slot_values, ontology=ontology, version=args.mwz_ver)
 
         context_slot_values = data_item['last_slot_values']  # a dictionary
@@ -160,20 +193,23 @@ def run(test_set, turn=-1, use_gold=False):
         if use_gold:
             all_slot_values = context_slot_values.copy()
         else:
+            # 이전 턴의 slot values를 all_slot_values로 저장
             all_slot_values = prediction_recorder.state_retrieval(
                 data_item).copy()
 
+        # slot changes를 참조해 dialogues states 만듬
         for s, v in predicted_slot_values.items():
-
+            # 사라진 경우라면 없앰
             if s in all_slot_values and v == "[DELETE]":
                 del all_slot_values[s]
+            # 사라진 경우가 아니라면 업데이트
             elif v != "[DELETE]":
                 all_slot_values[s] = v
 
-        # some slots may contain multiple values
+        # some slots may contain multiple values (하나만 선택)
         all_slot_values = {k: v.split('|')[0] for k, v in all_slot_values.items()}
         
-        # record current turn prediction
+        # record current turn prediction, 업데이트 된 값을 dialogue states의 형태로 recoder에 기록
         prediction_recorder.add_state(data_item, all_slot_values)
 
         # record the predictions
@@ -199,13 +235,7 @@ def run(test_set, turn=-1, use_gold=False):
             print("\n=====================correct!=======================")
         else:
             result_dict[data_item['turn_id']].append(0)
-            print("\n=====================wrong!=======================")
-        
-        print("\n")
-
-        ##########################
-        ########## 추가 ##########
-        ##########################
+            print("\n======================wrong!========================")
 
         # Record Evaluation Result
         data_item['JGA'] = n_correct / n_total
@@ -216,19 +246,16 @@ def run(test_set, turn=-1, use_gold=False):
         if this_jga:
             data_item['pred_status'] = 'Correct'
         else:
-            data_item['pred_status'] = '===================== Wrong ======================='
+            data_item['pred_status'] = '============================= Wrong ==============================='
+
+        data_item['current_time'] = cur_time
 
         all_result.append(data_item)
 
         # Log Checkpoint
-        if idx % 2 == 0:
+        if idx % 5 == 0:
             with open(os.path.join(output_dir, f'running_log.json'), 'w') as f:
                 json.dump(all_result, f, indent=4)
-
-        ##########################
-        ########## 추가 ##########
-        ##########################
-
 
 
     print(f"correct {n_correct}/{n_total}  =  {n_correct / n_total}")
@@ -238,15 +265,17 @@ def run(test_set, turn=-1, use_gold=False):
 
     # calculate the accuracy of each turn
     for k, v in result_dict.items():
-        print(f"accuracy of turn {k} is {sum(v)}/{len(v)} = {sum(v) / len(v)}")    
-
+        print(f"accuracy of turn {k} is {sum(v)}/{len(v)} = {sum(v) / len(v)}")
 
     return all_result
 
 
 if __name__ == "__main__":
-
-    all_results = run(test_set[4:9])
+    all_results = run(test_set[:args.test_size])
 
     with open(os.path.join(output_dir, "running_log.json"), 'w') as f:
         json.dump(all_results, f, indent=4)
+
+    printFGA(output_dir)
+
+    print(f"종료 시간: {time.strftime('%y%m%d_%H%M')}")

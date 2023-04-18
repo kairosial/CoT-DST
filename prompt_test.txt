@@ -1,0 +1,127 @@
+A Chain of Prompt (CoT) is a series of intermediate reasoning steps that include specific step-by-step reasoning process. the examples below show Chain of prompt.
+
+example
+Q: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can has 3 tennis balls. How many tennis balls does he have now ?
+CoT: Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11 . 
+A: 11
+
+
+example
+Q: A coin is heads up. Maybelle flips the coin. Shalonda does not flip the coin. Is the coin still heads up ?
+CoT: The coin was flipped by Maybelle. So the coin was flipped 1 time, which is an odd number. The coin started heads up, so after an odd number of flips, it will be tails up .
+A: no
+
+
+example
+Q: Take the last letters of the words in “Lady Gaga” and concatenate them .
+CoT: The last letter of “Lady” is “y”. The last letter of “Gaga” is “a”. Concatenating them is “ya” .
+A: ya
+
+hotel-name: a and b guest house, ashley hotel, el shaddia guest house, etc.
+hotel-pricerange: dontcare, cheap, moderate, expensive
+hotel-type: hotel, guest house
+hotel-parking: dontcare, yes, no
+hotel-book_number_of_days: 1, 2, 3, etc.
+hotel-book_day: monday, tuesday, etc.
+hotel-book_people: 1, 2, 3, etc.
+hotel-area: dontcare, centre, east, north, south, west
+hotel-stars: dontcare, 0, 1, 2, 3, 4, 5
+hotel-internet: dontcare, yes, no
+train-destination: london kings cross, cambridge, peterborough, etc.
+train-departure: cambridge, stansted airport, etc.
+train-day: monday, saturday, etc.
+train-book_people: 1, 2, 3, etc.
+train-depart_time: 20:24, 12:06, etc.
+train-arrive_by_time: 05:51, 20:52, etc.
+attraction-name: abbey pool and astroturf pitch, adc theatre, all saints church, castle galleries, etc.
+attraction-area: dontcare, centre, east, north, south, west
+attraction-type: architecture, boat, church, cinema, college, concert hall, entertainment, hotspot, multiple sports, museum,
+nightclub, park, special, swimming pool, theatre
+restaurant-name: pizza hut city centre, the missing sock, golden wok, cambridge chop house, darrys cookhouse and wine shop,
+etc.
+restaurant-food_type: italian, international, chinese, dontcare, modern european, etc.
+restaurant-pricerange: dontcare, cheap, moderate, expensive
+restaurant-area: centre, east, north, south, west
+restaurant-book_time: 13:30, 17:11, etc.
+restaurant-book_day: wednesday, friday, etc.
+restaurant-book_people: 1, 2, 3, etc.
+taxi-destination: copper kettle, magdalene college, lovell lodge
+taxi-departure: royal spice, university arms hotel, da vinci pizzeria
+taxi-depart_time: 14:45, 11:15, etc.
+taxi-arrive_by_time: 15:30, 12:45, etc.
+
+-- the examples below show tracking of slots changes in multi-turn conversational questions for the ontology provided above
+
+Example #1
+[context] hotel-type = guest house, hotel-internet = yes, attraction-type = park, hotel-parking = yes
+[system] sure ! milton country park is at cb46az . it s free admission .
+Q: [user] free is perfect . that will leave me extra to book a taxi from my hotel .
+A: taxi-departure = acorn guest house
+
+
+Example #2
+[context] taxi-destination = pembroke college
+[system] where will you be departing from ?
+Q: [user] i need to leave from primavera
+A: taxi-departure = primavera
+
+
+Example #3
+[context] 
+[system] 
+Q: [user] i want to get a taxi to pick me up from the cambridge train station please .
+A: taxi-departure = cambridge train station
+
+
+Example #4
+[context] restaurant-book time = 13:45, restaurant-book day = tuesday, restaurant-pricerange = moderate, restaurant-book people = 2, restaurant-area = west, restaurant-food_type = italian, attraction-type = museum, attraction-area = west, restaurant-name = prezzo
+[system] okay . your booking was successful . the reference number is 8z0bbwce . your table will be reserved for 15 minutes .
+Q: [user] i need to book a taxi from the museum to the restaurant .
+A: taxi-arrive_by_time = 13:45, taxi-destination = prezzo, taxi-departure = cafe jello gallery
+
+
+Example #5
+[context] restaurant-book time = 12:30, restaurant-book people = 6, restaurant-area = west, restaurant-book day = wednesday, restaurant-food_type = indian, restaurant-name = tandoori palace, attraction-name = cafe jello gallery, attraction-area = west, restaurant-pricerange = expensive
+[system] your reference number is src2i813 , your table will be held for 15 mins . is there anything else i can assist you with ?
+Q: [user] yes . i need a taxi to take me from the museum to the restaurant .
+A: taxi-destination = tandoori palace, taxi-departure = cafe jello gallery
+
+
+Example #6
+[context] restaurant-name = j restaurant, attraction-type = swimming pool, restaurant-book time = 12:00, attraction-area = east, restaurant-book people = 3, restaurant-book day = sunday, attraction-name = abbey pool and astroturf pitch
+[system] sure ! the postcode is cb68nt and the entrance fee is not known .
+Q: [user] i would also like to book a taxi from the pool to the restaurant
+A: taxi-destination = j restaurant, taxi-departure = abbey pool and astroturf pitch
+
+
+Example #7
+[context] 
+[system] 
+Q: [user] i need a taxi departing from tang chinese .
+A: taxi-departure = tang chinese
+
+
+Example #8
+[context] 
+[system] 
+Q: [user] hello . can you book a taxi for me ? i need to travel from the grafton hotel restaurant to home from home .
+A: taxi-departure = grafton hotel restaurant, taxi-destination = home from home
+
+
+Example #9
+[context] 
+[system] 
+Q: [user] i want to book a taxi . the taxi should go to da vinci pizzeria and should depart from the missing sock .
+A: taxi-departure = the missing sock, taxi-destination = da vinci pizzeria
+
+
+Example #10
+[context] 
+[system] 
+Q: [user] hi , i would like to book a taxi from hakka to sidney sussex college .
+A: taxi-departure = hakka, taxi-destination = sidney sussex college
+
+For example 1 ~ 10, I want you to predict and return CoT prompt, which demonstrate the specific process of reasoning answer in [context], [system], Q:, CoT:, A: .
+
+
+

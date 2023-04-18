@@ -10,11 +10,8 @@ def gpt35_completion(prompt_text):
     messages=[
         {"role": "user", "content": prompt_text}
     ],
-    max_tokens=200,
+    # max_tokens=200,
     temperature=0,
-    stop=['--', '\n', ';', '#'],
+    # stop=['--', '\n', ';'],
     )
     return completion.choices[0].message["content"]
-
-
-

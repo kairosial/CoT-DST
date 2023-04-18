@@ -4,7 +4,10 @@ data/*
 !data/create_data.py
 !data/preprocess.sh
 !data/sample.py
-./config.py
+config.py
 __pycache__/
 retriever/expts/
 utils/__pycache__/
+colab_run.ipynb
+
+
